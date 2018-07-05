@@ -7,27 +7,52 @@ var items = {};
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
+
+
 exports.create = (text, callback) => {
-  var id = counter.getNextUniqueId();
-  items[id] = text;
-  callback(null, {id: id, text: text});
+  counter.getNextUniqueId((argOne, ourId) => {
+    fs.writeFile(`${exports.dataDir}/${counter.zeroPadding(ourId)}.txt`, text, (err) => {
+      if (err) {
+        throw ('error writing the file');
+      } else {
+        callback(null, {id: ourId, text: text});
+      }
+    })   
+  });
 };
 
 exports.readOne = (id, callback) => {
-  var item = items[id];
-  if (!item) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, {id: id, text: item});
-  }
+
+  fs.readFile(`${exports.dataDir}/${id}.txt`, (err, data) => {
+    if (err) {
+      callback(new Error(`No item with id: ${id}`))
+    } else {
+      callback(null,{id: id, text: data.toString()});
+    }
+  })
+
 };
+
 
 exports.readAll = (callback) => {
   var data = [];
-  _.each(items, (item, idx) => {
-    data.push({ id: idx, text: items[idx] });
-  });
-  callback(null, data);
+
+  //go over each file in a directory
+  //push each file into the data array as an object with two props
+  //id and text 
+  fs.readdir(exports.dataDir, (err, files) => {
+    if (err) {
+      throw ('there has been an error reading all the files');
+    } else {
+      _.each(files, (file) => {
+        file = file.substr(0, 5)
+        data.push({id: file, text: file});
+      })
+      return callback(null, data);
+  }
+
+  })
+
 };
 
 exports.update = (id, text, callback) => {
